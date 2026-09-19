@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- Clipora AI V3 -->
+<title>Clipora AI — AI Reel Creator</title>
+<meta name="description" content="Turn one idea into a complete short-form Reel package with Clipora AI.">
+<style>
+:root{--bg:#08090d;--panel:#10121a;--text:#f7f7fb;--muted:#9ca3b4;--line:#252938;--a:#8b5cf6;--b:#ec4899}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 80% 8%,#2b1246,transparent 28%),var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+nav{height:72px;display:flex;align-items:center;justify-content:space-between;max-width:1120px;margin:auto;padding:0 24px}.logo{font-size:22px;font-weight:800}.logo span{color:#a78bfa}.navbtn{border:1px solid var(--line);background:#11131b;color:#fff;border-radius:10px;padding:10px 16px;font-weight:700}
+.hero{max-width:1120px;margin:auto;padding:76px 24px 55px;text-align:center}.badge{display:inline-block;padding:7px 12px;border:1px solid #392750;background:#171222;color:#c4b5fd;border-radius:999px;font-size:13px}
+h1{font-size:clamp(44px,7vw,76px);line-height:.98;letter-spacing:-4px;margin:22px auto;max-width:850px}.grad{background:linear-gradient(90deg,#c4b5fd,#f9a8d4);-webkit-background-clip:text;color:transparent}
+.hero p{max-width:650px;margin:auto;color:var(--muted);font-size:18px;line-height:1.6}.cta{margin-top:28px;padding:14px 22px;border:0;border-radius:12px;background:linear-gradient(90deg,var(--a),var(--b));color:#fff;font-weight:800;cursor:pointer}
+.section{max-width:1120px;margin:auto;padding:35px 24px 80px}.grid{display:grid;grid-template-columns:1fr 1.15fr;gap:24px}.card{background:linear-gradient(180deg,#11141e,#0d0f15);border:1px solid var(--line);border-radius:18px;padding:24px}
+label{display:block;font-size:13px;color:#c5cad7;margin-bottom:8px;font-weight:650}textarea,select{width:100%;background:#0a0c11;color:#fff;border:1px solid var(--line);border-radius:10px;padding:13px;font:inherit;outline:none}textarea{min-height:125px;resize:vertical}select{height:46px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.generate{width:100%;margin-top:16px;height:48px;border:0;border-radius:10px;background:#fff;color:#08090d;font-weight:800;cursor:pointer}.generate:disabled{opacity:.55;cursor:wait}
+.result h2{margin:0 0 18px;font-size:20px}.empty{min-height:310px;display:grid;place-items:center;text-align:center;color:var(--muted);border:1px dashed #303443;border-radius:13px;padding:30px}
+.block{background:#0a0c11;border:1px solid var(--line);border-radius:12px;padding:15px;margin-bottom:12px}.head{display:flex;justify-content:space-between;color:#a78bfa;text-transform:uppercase;font-size:12px;font-weight:800;letter-spacing:.5px}.copy{border:0;background:none;color:#a7adbd;cursor:pointer}.content{white-space:pre-wrap;line-height:1.55;margin-top:9px;color:#e7e9ef;font-size:14px}.error{color:#fda4af;background:#251116;border:1px solid #5b202b;padding:12px;border-radius:10px;margin-bottom:12px}
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:20px}.feature{padding:20px;border:1px solid var(--line);border-radius:14px;background:#0d1017}.feature b{display:block;margin-bottom:8px}.feature span{color:var(--muted);font-size:14px;line-height:1.5}
+footer{text-align:center;color:#707789;padding:25px;border-top:1px solid var(--line);font-size:13px}@media(max-width:800px){.grid,.features{grid-template-columns:1fr}h1{letter-spacing:-2.5px}}
+</style></head><body>
+<nav><div class="logo">Clipora <span>AI</span></div><button class="navbtn" onclick="document.getElementById('idea').focus()">Try it</button></nav>
+<header class="hero"><div class="badge">✦ AI-powered short-form content studio</div><h1>One idea.<br><span class="grad">One complete Reel.</span></h1><p>Turn a simple idea into a hook, script, scene prompts, dialogue, caption and hashtags.</p><button class="cta" onclick="document.getElementById('idea').focus()">Create your first Reel →</button></header>
+<section class="section"><div class="grid">
+<div class="card"><label for="idea">What's your Reel idea?</label><textarea id="idea" placeholder="Example: A funny Hindi baby becomes a doctor and treats his sleepy father..."></textarea>
+<div class="row"><div><label>Language</label><select id="lang"><option>Hinglish</option><option>Hindi</option><option>English</option></select></div><div><label>Style</label><select id="style"><option>Funny</option><option>Cinematic</option><option>Emotional</option><option>Scary</option><option>Educational</option></select></div></div>
+<div class="row"><div><label>Platform</label><select id="platform"><option>Instagram Reels</option><option>YouTube Shorts</option><option>TikTok</option></select></div><div><label>Duration</label><select id="duration"><option>10 seconds</option><option>20 seconds</option><option>30 seconds</option><option>60 seconds</option></select></div></div>
+<button id="gen" class="generate" onclick="generate()">Generate Reel Package</button></div>
+<div class="card result"><h2>Your Reel Package</h2><div id="empty" class="empty"><div><div style="font-size:34px">✦</div><b>Your AI result will appear here</b><br><span>Enter an idea and generate your first package.</span></div></div><div id="output"></div></div>
+</div><div class="features"><div class="feature"><b>🎯 Viral Hook</b><span>Attention-grabbing opening for short-form content.</span></div><div class="feature"><b>🎬 Scene Prompts</b><span>Structured prompts for AI video generators.</span></div><div class="feature"><b>📱 Post-Ready</b><span>Dialogue, captions and hashtags in one workflow.</span></div></div></section>
+<footer>© 2026 Clipora AI · Built for creators</footer>
+<script>
+async function generate(){
+ const idea=document.getElementById('idea').value.trim()||"A funny baby becomes a doctor and treats his sleepy father";
+ const body={idea,language:document.getElementById('lang').value,style:document.getElementById('style').value,platform:document.getElementById('platform').value,duration:document.getElementById('duration').value};
+ const btn=document.getElementById('gen');btn.disabled=true;btn.textContent="Generating…";
+ document.getElementById('empty').style.display="none";document.getElementById('output').innerHTML="";
+ try{const r=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(d.error||"Generation failed");
+ const items=[["Hook",d.hook],["Script",d.script],["Scene prompts",d.scene_prompts],["Dialogue / voiceover",d.dialogue],["Caption",d.caption],["Hashtags",d.hashtags]];
+ document.getElementById('output').innerHTML=items.map((x,i)=>`<div class="block"><div class="head"><span>${x[0]}</span><button class="copy" onclick="navigator.clipboard.writeText(document.getElementById('c${i}').innerText)">Copy</button></div><div class="content" id="c${i}">${esc(x[1])}</div></div>`).join("");
+ }catch(e){document.getElementById('output').innerHTML=`<div class="error">${esc(e.message)}</div>`;document.getElementById('empty').style.display="grid"}finally{btn.disabled=false;btn.textContent="Generate Reel Package"}
+}
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+</script></body></html>
