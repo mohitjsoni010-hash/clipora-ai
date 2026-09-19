@@ -1,96 +1,115 @@
-// Clipora AI backend — Gemini API
-// IMPORTANT: Keep GEMINI_API_KEY on the server. Never put it in index.html.
-
 const express = require("express");
-const path = require("path");
 
 const app = express();
-app.set("trust proxy", 1);
-app.use(express.json({ limit: "20kb" }));
+const PORT = process.env.PORT || 10000;
 
-// Simple MVP protection. This is NOT a replacement for real accounts/billing.
-const WINDOW_MS = 60 * 60 * 1000;
-const MAX_REQUESTS_PER_IP = 10;
-const requestLog = new Map();
+app.use(express.json({ limit: "1mb" }));
 
-function rateLimit(req, res, next) {
-  const now = Date.now();
-  const ip = req.ip || req.socket.remoteAddress || "unknown";
-  const entry = requestLog.get(ip);
+const API_KEY = process.env.GEMINI_API_KEY;
 
-  if (!entry || now - entry.start >= WINDOW_MS) {
-    requestLog.set(ip, { start: now, count: 1 });
-    return next();
+function getModelName() {
+  let model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+  model = model.trim();
+
+  // Prevent "models/models/..." errors
+  if (model.startsWith("models/")) {
+    model = model.substring("models/".length);
   }
 
-  if (entry.count >= MAX_REQUESTS_PER_IP) {
-    const retryAfter = Math.ceil((WINDOW_MS - (now - entry.start)) / 1000);
-    res.set("Retry-After", String(retryAfter));
-    return res.status(429).json({
-      error: "You've reached the demo limit. Please try again later."
-    });
-  }
-
-  entry.count += 1;
-  return next();
+  return model;
 }
 
 app.get("/health", (req, res) => {
-  res.json({ ok: true, service: "clipora-ai" });
+  res.json({
+    ok: true,
+    service: "Clipora AI"
+  });
 });
 
-app.use(express.static(__dirname));
-
-app.post("/api/generate", rateLimit, async (req, res) => {
+app.post("/api/generate", async (req, res) => {
   try {
+    if (!API_KEY) {
+      return res.status(500).json({
+        error: "Gemini API key is not configured."
+      });
+    }
+
     const {
       idea,
-      language = "Hinglish",
-      style = "Funny",
+      language = "English",
+      style = "Viral",
       platform = "Instagram Reels",
-      duration = "10 seconds"
+      duration = "30 seconds"
     } = req.body || {};
 
-    if (typeof idea !== "string" || !idea.trim() || idea.length > 2000) {
+    if (!idea || !idea.trim()) {
       return res.status(400).json({
-        error: "Please enter a valid idea (max 2000 characters)."
+        error: "Please enter a Reel idea."
       });
     }
 
-    const prompt = `You are Clipora AI, an expert short-form video strategist.
-Create a high-quality ${duration} ${platform} package from this idea:
-"${idea.trim()}"
+    const model = getModelName();
 
-Language: ${language}
-Style: ${style}
+    const prompt = `
+You are Clipora AI, an expert short-form video content creator.
 
-Return ONLY valid JSON with exactly these string fields:
-hook, script, scene_prompts, dialogue, caption, hashtags
+Create a complete short-form Reel package from this idea:
 
-Requirements:
-- Make it practical for an AI-video creator.
-- Scene prompts must be shot-by-shot, vertical 9:16, visually specific, and maintain character consistency.
-- Match the requested language and style.
-- Keep the script appropriate for the requested duration.
-- Hashtags should be a space-separated string.
-- No markdown fences around the JSON.`;
+IDEA:
+${idea}
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return res.status(500).json({
-        error: "Server is not configured with GEMINI_API_KEY yet."
-      });
-    }
+LANGUAGE:
+${language}
 
-    const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+STYLE:
+${style}
+
+PLATFORM:
+${platform}
+
+DURATION:
+${duration}
+
+Return ONLY valid JSON with exactly these fields:
+
+{
+  "hook": "A strong attention-grabbing opening line",
+  "script": "A complete short-form script",
+  "scene_prompts": [
+    "Scene 1 AI video generation prompt",
+    "Scene 2 AI video generation prompt",
+    "Scene 3 AI video generation prompt",
+    "Scene 4 AI video generation prompt"
+  ],
+  "dialogue": "Dialogue or voiceover for the video",
+  "caption": "An engaging social media caption",
+  "hashtags": ["hashtag1", "hashtag2", "hashtag3", "hashtag4", "hashtag5"]
+}
+
+Keep the content suitable for the selected platform and duration.
+Make the hook highly engaging.
+Make scene prompts visually detailed and useful for AI video generators.
+Do not include markdown or code fences.
+`;
+
     const url =
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${API_KEY}`;
 
     const response = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
+        contents: [
+          {
+            parts: [
+              {
+                text: prompt
+              }
+            ]
+          }
+        ],
         generationConfig: {
           responseMimeType: "application/json"
         }
@@ -100,37 +119,48 @@ Requirements:
     const data = await response.json();
 
     if (!response.ok) {
-      return res.status(502).json({
-        error: data?.error?.message || "Gemini API error"
+      console.error("Gemini API error:", data);
+
+      return res.status(response.status).json({
+        error:
+          data?.error?.message ||
+          "Gemini API request failed."
       });
     }
 
-    const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!raw) {
-      return res.status(502).json({
-        error: "No AI response returned."
+    const text =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!text) {
+      return res.status(500).json({
+        error: "Gemini returned an empty response."
       });
     }
 
-    let parsed;
+    let result;
+
     try {
-      parsed = JSON.parse(raw);
-    } catch {
-      return res.status(502).json({
-        error: "AI returned invalid JSON. Please try again."
+      result = JSON.parse(text);
+    } catch (parseError) {
+      console.error("JSON parse error:", parseError);
+      console.error("Gemini response:", text);
+
+      return res.status(500).json({
+        error: "Gemini returned invalid JSON."
       });
     }
 
-    return res.json(parsed);
-  } catch (e) {
-    console.error(e);
-    return res.status(500).json({
-      error: "Unexpected server error."
+    res.json(result);
+
+  } catch (error) {
+    console.error("Server error:", error);
+
+    res.status(500).json({
+      error: "Something went wrong while generating your Reel."
     });
   }
 });
 
-const port = process.env.PORT || 3000;
-app.listen(port, "0.0.0.0", () => {
-  console.log(`Clipora AI running on port ${port}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Clipora AI running on port ${PORT}`);
 });
