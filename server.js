@@ -1,4 +1,5 @@
 const express = require("express");
+const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -11,13 +12,28 @@ function getModelName() {
   let model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
   model = model.trim();
 
-  // Prevent "models/models/..." errors
+  // If someone entered models/gemini-3.8-flash,
+  // remove the prefix so we don't create models/models/...
   if (model.startsWith("models/")) {
-    model = model.substring("models/".length);
+    model = model.slice("models/".length);
   }
 
   return model;
 }
+
+/* ---------------------------
+   SERVE CLIPORA FRONTEND
+---------------------------- */
+
+app.use(express.static(path.join(__dirname)));
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
+
+/* ---------------------------
+   HEALTH CHECK
+---------------------------- */
 
 app.get("/health", (req, res) => {
   res.json({
@@ -26,11 +42,15 @@ app.get("/health", (req, res) => {
   });
 });
 
+/* ---------------------------
+   GEMINI GENERATION
+---------------------------- */
+
 app.post("/api/generate", async (req, res) => {
   try {
     if (!API_KEY) {
       return res.status(500).json({
-        error: "Gemini API key is not configured."
+        error: "Gemini API key is not configured on the server."
       });
     }
 
@@ -83,22 +103,32 @@ Return ONLY valid JSON with exactly these fields:
   ],
   "dialogue": "Dialogue or voiceover for the video",
   "caption": "An engaging social media caption",
-  "hashtags": ["hashtag1", "hashtag2", "hashtag3", "hashtag4", "hashtag5"]
+  "hashtags": [
+    "hashtag1",
+    "hashtag2",
+    "hashtag3",
+    "hashtag4",
+    "hashtag5"
+  ]
 }
 
-Keep the content suitable for the selected platform and duration.
-Make the hook highly engaging.
-Make scene prompts visually detailed and useful for AI video generators.
-Do not include markdown or code fences.
+Make the content engaging and suitable for the selected platform and duration.
+Make the hook highly attention-grabbing.
+Make each scene prompt detailed and useful for AI video generation.
+Keep the response concise enough for a short-form video.
+Do not include markdown.
+Do not include code fences.
+Return JSON only.
 `;
 
     const url =
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${API_KEY}`;
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
     const response = await fetch(url, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "x-goog-api-key": API_KEY
       },
       body: JSON.stringify({
         contents: [
@@ -141,25 +171,28 @@ Do not include markdown or code fences.
 
     try {
       result = JSON.parse(text);
-    } catch (parseError) {
-      console.error("JSON parse error:", parseError);
-      console.error("Gemini response:", text);
+    } catch (error) {
+      console.error("Gemini returned invalid JSON:", text);
 
       return res.status(500).json({
         error: "Gemini returned invalid JSON."
       });
     }
 
-    res.json(result);
+    return res.json(result);
 
   } catch (error) {
     console.error("Server error:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       error: "Something went wrong while generating your Reel."
     });
   }
 });
+
+/* ---------------------------
+   START SERVER
+---------------------------- */
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Clipora AI running on port ${PORT}`);
